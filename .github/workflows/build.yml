@@ -1,0 +1,66 @@
+name: Build APK and Release
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      # --- SINCRONIZAR VERSIÓN EN APP.JSON ---
+      - name: Update version in app.json
+        run: |
+          NEW_VERSION=$(echo ${{ github.ref_name }} | sed 's/v//')
+          echo "Actualizando app.json a la versión: $NEW_VERSION"
+          sed -i "s/\"version\": \".*\"/\"version\": \"$NEW_VERSION\"/" app.json
+
+      # --- CONFIGURAR EXPO Y EAS ---
+      - name: Setup Expo
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      # --- INSTALAR DEPENDENCIAS ---
+      - name: Install dependencies
+        run: npm install
+
+      # --- LIMPIEZA TOTAL DE CACHÉ NATIVO ---
+      - name: Clean build artifacts
+        run: |
+          rm -rf android
+          rm -rf ios
+
+      # --- COMPILACIÓN LOCAL CON EAS (0 CRÉDITOS) ---
+      - name: Build APK Local
+        run: |
+          # Creamos el archivo .env físico en el servidor para asegurar que EAS lo inyecte al APK
+          echo "EXPO_PUBLIC_GEMINI_API_KEY=${{ secrets.EXPO_PUBLIC_GEMINI_API_KEY }}" > .env
+          eas build --platform android --profile production --local --non-interactive --output ./KimyIA.apk
+        env:
+          EXPO_PUBLIC_GEMINI_API_KEY: ${{ secrets.EXPO_PUBLIC_GEMINI_API_KEY }}
+          EAS_NO_VCS: 1
+          NODE_ENV: production
+
+      # --- CREACIÓN DE LA RELEASE EN GITHUB ---
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: KimyIA.apk
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          body: "Versión ${{ github.ref_name }} generada automáticamente por GitHub Actions."
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
