@@ -14,21 +14,23 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: expo/expo-github-action@v8
         with:
           node-version: 20
           cache: 'npm'
 
-      # --- ACTUALIZAR VERSIÓN EN APP.JSON (COMPATIBLE CON WINDOWS/POWERSHELL) ---
+      # --- ACTUALIZAR VERSIÓN EN APP.JSON (TEXTO PLANO - ROBUSTO) ---
       - name: Update version in app.json
         shell: powershell
         run: |
           $tag = "${{ github.ref_name }}"
           $newVersion = $tag.Replace("v", "")
           Write-Output "Actualizando app.json a la versión: $newVersion"
-          $json = Get-Content app.json -Raw | ConvertFrom-Json
-          $json.version = $newVersion
-          $json | ConvertTo-Json -Depth 10 | Set-Content app.json
+          
+          $content = Get-Content app.json -Raw
+          # Busca la clave "version" y actualiza su valor independientemente de la estructura
+          $newContent = $content -replace '"version":\s*".*?"', '"version": "' + $newVersion + '"'
+          $newContent | Set-Content app.json
 
       # --- CONFIGURAR EXPO Y EAS ---
       - name: Setup Expo
