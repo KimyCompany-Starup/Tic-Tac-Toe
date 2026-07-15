@@ -18,31 +18,23 @@ jobs:
           node-version: 20
           cache: 'npm'
 
-      # --- SINCRONIZAR VERSIÓN EN APP.JSON ---
-      - name: Update version in app.json
+      # --- AUMENTAR MEMORIA PARA GRADLE ---
+      # Esto evita el error OutOfMemory al compilar en GitHub
+      - name: Create Gradle Properties
         run: |
-          NEW_VERSION=$(echo ${{ github.ref_name }} | sed 's/v//')
-          echo "Actualizando app.json a la versión: $NEW_VERSION"
-          sed -i "s/\"version\": \".*\"/\"version\": \"$NEW_VERSION\"/" app.json
+          mkdir -p android/gradle
+          echo "org.gradle.jvmargs=-Xmx2048m -XX:MaxMetaspaceSize=512m" > android/gradle.properties
 
-      # --- CONFIGURAR EXPO Y EAS ---
       - name: Setup Expo
         uses: expo/expo-github-action@v8
         with:
           eas-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
 
-      # --- INSTALAR DEPENDENCIAS ---
       - name: Install dependencies
         run: npm install
 
-      # --- LIMPIEZA TOTAL DE CACHÉ NATIVO ---
-      - name: Clean build artifacts
-        run: |
-          rm -rf android
-          rm -rf ios
-
-      # --- COMPILACIÓN LOCAL CON EAS ---
+      # --- COMPILACIÓN LOCAL CON MEMORIA OPTIMIZADA ---
       - name: Build APK Local
         run: |
           eas build --platform android --profile production --local --non-interactive --output ./Tic-Tac-Toe.apk
@@ -50,7 +42,6 @@ jobs:
           EAS_NO_VCS: 1
           NODE_ENV: production
 
-      # --- CREACIÓN DE LA RELEASE EN GITHUB ---
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
