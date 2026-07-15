@@ -1,4 +1,5 @@
 name: Build APK and Release
+
 on:
   push:
     tags:
@@ -41,14 +42,11 @@ jobs:
           rm -rf android
           rm -rf ios
 
-      # --- COMPILACIÓN LOCAL CON EAS (0 CRÉDITOS) ---
+      # --- COMPILACIÓN LOCAL CON EAS ---
       - name: Build APK Local
         run: |
-          # Creamos el archivo .env físico en el servidor para asegurar que EAS lo inyecte al APK
-          echo "EXPO_PUBLIC_GEMINI_API_KEY=${{ secrets.EXPO_PUBLIC_GEMINI_API_KEY }}" > .env
-          eas build --platform android --profile production --local --non-interactive --output ./KimyIA.apk
+          eas build --platform android --profile production --local --non-interactive --output ./Tic-Tac-Toe.apk
         env:
-          EXPO_PUBLIC_GEMINI_API_KEY: ${{ secrets.EXPO_PUBLIC_GEMINI_API_KEY }}
           EAS_NO_VCS: 1
           NODE_ENV: production
 
@@ -56,7 +54,7 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
-          files: KimyIA.apk
+          files: Tic-Tac-Toe.apk
           tag_name: ${{ github.ref_name }}
           name: Release ${{ github.ref_name }}
           body: "Versión ${{ github.ref_name }} generada automáticamente por GitHub Actions."
