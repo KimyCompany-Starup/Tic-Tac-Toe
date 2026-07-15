@@ -20,19 +20,29 @@ jobs:
       - name: Instalar EAS CLI
         run: npm install -g eas-cli
 
-      # 1. Ejecutar el build en la nube de Expo
-      - name: Build en la Nube de Expo
-        run: eas build --platform android --non-interactive --profile production --output ./app-release.apk
+      # 1. Build en la Nube de Expo (Sin --output)
+      - name: Build en la Nube
+        run: eas build --platform android --non-interactive --profile production
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-          # Nota: Si tu proyecto requiere configuraciones adicionales, 
-          # eas.json se encarga de todo en la nube.
 
-      # 2. Publicar la Release en GitHub
+      # 2. Descargar el APK generado
+      # Nota: Necesitas saber el ID o usar una herramienta para bajarlo.
+      # La forma más robusta es usar el comando de descarga de EAS
+      - name: Descargar APK
+        run: |
+          # Obtenemos la URL del último build exitoso y lo descargamos
+          eas build:list --platform android --limit 1 --json > build_info.json
+          BUILD_URL=$(node -p "require('./build_info.json')[0].artifacts.buildUrl")
+          curl -L $BUILD_URL -o Tic-Tac-Toe.apk
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+
+      # 3. Publicar en GitHub
       - name: Publicar Release
         uses: softprops/action-gh-release@v1
         with:
-          files: ./app-release.apk
+          files: Tic-Tac-Toe.apk
           tag_name: ${{ github.ref_name }}
           name: Release ${{ github.ref_name }}
           body: "APK generado automáticamente en la nube de Expo."
