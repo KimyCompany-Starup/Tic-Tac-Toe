@@ -19,25 +19,20 @@ jobs:
           node-version: 22
           cache: 'npm'
 
-      # --- ACTUALIZAR VERSIÓN EN APP.JSON (ESTRUCTURA EXPO) ---
+      # --- ACTUALIZAR VERSIÓN EN APP.JSON ---
       - name: Update version in app.json
         shell: powershell
         run: |
           $tag = "${{ github.ref_name }}"
           $newVersion = $tag.Replace("v", "")
           Write-Output "Actualizando app.json a la versión: $newVersion"
-          
           $json = Get-Content app.json -Raw | ConvertFrom-Json
           $json.expo.version = $newVersion
           $json | ConvertTo-Json -Depth 20 | Set-Content app.json
 
-      # --- CONFIGURAR EXPO Y EAS (FORZANDO NPM) ---
-      - name: Setup Expo
-        uses: expo/expo-github-action@v8
-        with:
-          eas-version: latest
-          token: ${{ secrets.EXPO_TOKEN }}
-          # Usaremos la instalación global de EAS en tu PC si está disponible
+      # --- INSTALAR EAS CLI MANUALMENTE ---
+      - name: Install EAS CLI
+        run: npm install -g eas-cli
 
       # --- INSTALAR DEPENDENCIAS ---
       - name: Install dependencies
@@ -51,6 +46,7 @@ jobs:
         env:
           EAS_NO_VCS: 1
           NODE_ENV: production
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
       # --- CREACIÓN DE LA RELEASE EN GITHUB ---
       - name: Create GitHub Release
@@ -59,7 +55,7 @@ jobs:
           files: Tic-Tac-Toe.apk
           tag_name: ${{ github.ref_name }}
           name: Release ${{ github.ref_name }}
-          body: "Versión ${{ github.ref_name }} generada automáticamente por tu PC (Self-Hosted Runner)."
+          body: "Versión ${{ github.ref_name }} generada automáticamente por tu PC."
           draft: false
           prerelease: false
         env:
