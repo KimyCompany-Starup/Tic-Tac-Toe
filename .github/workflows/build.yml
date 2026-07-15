@@ -16,7 +16,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: 'npm'
 
       # --- ACTUALIZAR VERSIÓN EN APP.JSON (ESTRUCTURA EXPO) ---
@@ -27,17 +27,17 @@ jobs:
           $newVersion = $tag.Replace("v", "")
           Write-Output "Actualizando app.json a la versión: $newVersion"
           
-          # Lee, modifica la propiedad específica expo.version y guarda
           $json = Get-Content app.json -Raw | ConvertFrom-Json
           $json.expo.version = $newVersion
           $json | ConvertTo-Json -Depth 20 | Set-Content app.json
 
-      # --- CONFIGURAR EXPO Y EAS ---
+      # --- CONFIGURAR EXPO Y EAS (FORZANDO NPM) ---
       - name: Setup Expo
         uses: expo/expo-github-action@v8
         with:
           eas-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
+          # Usaremos la instalación global de EAS en tu PC si está disponible
 
       # --- INSTALAR DEPENDENCIAS ---
       - name: Install dependencies
