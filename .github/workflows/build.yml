@@ -1,4 +1,4 @@
-name: Build APK and Release
+name: Build and Release APK
 
 on:
   push:
@@ -7,55 +7,35 @@ on:
 
 jobs:
   build:
-    runs-on: self-hosted
-    
+    runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
+      - name: Checkout del código
         uses: actions/checkout@v4
 
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: 'npm'
 
-      # --- ACTUALIZAR VERSIÓN EN APP.JSON ---
-      - name: Update version in app.json
-        shell: powershell
-        run: |
-          $tag = "${{ github.ref_name }}"
-          $newVersion = $tag.Replace("v", "")
-          Write-Output "Actualizando app.json a la versión: $newVersion"
-          $json = Get-Content app.json -Raw | ConvertFrom-Json
-          $json.expo.version = $newVersion
-          $json | ConvertTo-Json -Depth 20 | Set-Content app.json
-
-      # --- INSTALAR EAS CLI MANUALMENTE ---
-      - name: Install EAS CLI
+      - name: Instalar EAS CLI
         run: npm install -g eas-cli
 
-      # --- INSTALAR DEPENDENCIAS ---
-      - name: Install dependencies
-        run: npm install
-
-      # --- COMPILACIÓN LOCAL EN TU PC ---
-      - name: Build APK Local
-        shell: powershell
-        run: |
-          eas build --platform android --profile production --local --non-interactive --output ./Tic-Tac-Toe.apk
+      # 1. Ejecutar el build en la nube de Expo
+      - name: Build en la Nube de Expo
+        run: eas build --platform android --non-interactive --profile production --output ./app-release.apk
         env:
-          EAS_NO_VCS: 1
-          NODE_ENV: production
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          # Nota: Si tu proyecto requiere configuraciones adicionales, 
+          # eas.json se encarga de todo en la nube.
 
-      # --- CREACIÓN DE LA RELEASE EN GITHUB ---
-      - name: Create GitHub Release
+      # 2. Publicar la Release en GitHub
+      - name: Publicar Release
         uses: softprops/action-gh-release@v1
         with:
-          files: Tic-Tac-Toe.apk
+          files: ./app-release.apk
           tag_name: ${{ github.ref_name }}
           name: Release ${{ github.ref_name }}
-          body: "Versión ${{ github.ref_name }} generada automáticamente por tu PC."
+          body: "APK generado automáticamente en la nube de Expo."
           draft: false
           prerelease: false
         env:
