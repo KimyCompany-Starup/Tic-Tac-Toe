@@ -7,7 +7,6 @@ on:
 
 jobs:
   build:
-    # Cambiado a self-hosted para usar la potencia de tu PC
     runs-on: self-hosted
     
     steps:
@@ -20,12 +19,16 @@ jobs:
           node-version: 20
           cache: 'npm'
 
-      # --- SINCRONIZAR VERSIÓN EN APP.JSON ---
+      # --- ACTUALIZAR VERSIÓN EN APP.JSON (COMPATIBLE CON WINDOWS/POWERSHELL) ---
       - name: Update version in app.json
+        shell: powershell
         run: |
-          NEW_VERSION=$(echo ${{ github.ref_name }} | sed 's/v//')
-          echo "Actualizando app.json a la versión: $NEW_VERSION"
-          sed -i "s/\"version\": \".*\"/\"version\": \"$NEW_VERSION\"/" app.json
+          $tag = "${{ github.ref_name }}"
+          $newVersion = $tag.Replace("v", "")
+          Write-Output "Actualizando app.json a la versión: $newVersion"
+          $json = Get-Content app.json -Raw | ConvertFrom-Json
+          $json.version = $newVersion
+          $json | ConvertTo-Json -Depth 10 | Set-Content app.json
 
       # --- CONFIGURAR EXPO Y EAS ---
       - name: Setup Expo
@@ -38,14 +41,9 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      # --- LIMPIEZA TOTAL DE CACHÉ NATIVO ---
-      - name: Clean build artifacts
-        run: |
-          if [ -d "android" ]; then rm -rf android; fi
-          if [ -d "ios" ]; then rm -rf ios; fi
-
       # --- COMPILACIÓN LOCAL EN TU PC ---
       - name: Build APK Local
+        shell: powershell
         run: |
           eas build --platform android --profile production --local --non-interactive --output ./Tic-Tac-Toe.apk
         env:
