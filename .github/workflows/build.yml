@@ -16,22 +16,24 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: 'npm'
+
+      - name: Instalar dependencias
+        run: npm install
 
       - name: Instalar EAS CLI
         run: npm install -g eas-cli
 
-      # 1. Build en la Nube de Expo (Sin --output)
+      # 1. Build en la Nube de Expo
       - name: Build en la Nube
         run: eas build --platform android --non-interactive --profile production
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
       # 2. Descargar el APK generado
-      # Nota: Necesitas saber el ID o usar una herramienta para bajarlo.
-      # La forma más robusta es usar el comando de descarga de EAS
       - name: Descargar APK
         run: |
-          # Obtenemos la URL del último build exitoso y lo descargamos
+          # Obtiene la URL del último build exitoso y descarga el archivo
           eas build:list --platform android --limit 1 --json > build_info.json
           BUILD_URL=$(node -p "require('./build_info.json')[0].artifacts.buildUrl")
           curl -L $BUILD_URL -o Tic-Tac-Toe.apk
